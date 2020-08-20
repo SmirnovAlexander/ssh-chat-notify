@@ -1,0 +1,40 @@
+#!/bin/bash
+
+function start_chat() {
+
+    TEMPDIR="/tmp" # Directory to store FIFO tempfile.
+
+    NAME=$(echo "$*" | grep -o '[^ ]*@[^ ]*' | cut -d@ -f1)   # Getting user name.
+    SERVER=$(echo "$*" | grep -o '[^ ]*@[^ ]*' | cut -d@ -f2) # Getting server name.
+
+    # If user hadn't specified his name.
+    if [ -z "${NAME}" ]; then
+        NAME=$USER
+    fi
+
+    mkfifo $TEMPDIR/$NAME                                 # Creating a FIFO tempfile.
+    trap "rm $TEMPDIR/$NAME ; exit" SIGTERM SIGHUP SIGINT # Clearing the FIFO on kill.
+
+    # Reading FIFO file in another thread.
+    (cat -u -e $TEMPDIR/$NAME | while read line; do
+
+        # Notifying if meeting out name in others msgs.
+        if echo "$line" | grep -q '\^G'; then
+            # python $TEMPDIR/notify.py "$NAME" "$NAME" "$line"
+
+            notify-send "You were mentioned..."
+            echo $line >> $TEMPDIR/log
+        fi
+    done & ) > /dev/null 2>&1 # Removing backgroung process info from output.
+
+    ssh -t $* | tee $TEMPDIR/$NAME # Connecting to server and translating to FIFO.
+
+    rm $TEMPDIR/$NAME # Kill the FIFO when done (should kill other threads).
+    # killall cat # Stop reading file.
+}
+
+function clear_message() {
+    echo $SENDER_NAME
+}
+
+start_chat $*
