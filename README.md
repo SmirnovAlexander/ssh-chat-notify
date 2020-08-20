@@ -10,24 +10,29 @@ desktop alerts.
 
 ## Requirements
 
-* Git
+* *nix OS
 * openssh
-* Linux (or some kind of Unix-like environment)
-* Python
+* git
 
 ## Setup
 
-Git clone it into a repository you'll never see. Then we have to modify some shell dotfiles to 
-export the settings so that it works properly.
+Download repo and add `ssh-chat-notify` executable somewhere to your `PATH`.
 ``` bash
-git clone https://github.com/sleibrock/ssh-chat-notify $HOME/.sshome
-echo "export $SSHOME=$HOME/.sshome" >> .bashrc
-echo "source $SSHOME/ssh_chat.sh" >> .bashrc
+git clone https://github.com/sleibrock/ssh-chat-notify
+cd ssh-chat-notify
+chmod +x ssh-chat-notify
+sudo mv ssh-chat-notify /usr/bin/
 ```
 
-Replace `.bashrc` with whatever your shell uses to define stuff (`.zshrc`, etc).
+## Usage
 
-After that try logging into the default server with `ssh_chat <your_name>`.
+Use `ssh-chat-notify` as you would use normal `ssh` command.
+``` bash
+ssh-chat-notify ssh.chat
+```
+``` bash
+SSHCHAT_TIMESTAMP="time 3h" ssh-chat-notify -o SendEnv="SSHCHAT_TIMESTAMP" test@asmirnov.xyz -p 2022
+```
 
 ## Credits
 
