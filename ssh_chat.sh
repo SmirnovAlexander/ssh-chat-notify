@@ -1,14 +1,23 @@
-function ssh_chat(){
-    mkfifo $SSHOME/$1 # create a FIFO tempfile
-    trap "rm $SSHOME/$1;exit" SIGTERM SIGHUP SIGINT # clear the FIFO on kill
-    cat -u -e $SSHOME/$1 | while read line; do  # read the file in another thread
-	if echo "$line" | grep -q '\^G'; then
-	    python $SSHOME/notify.py $1 $2 "$line"
+function ssh_chat() {
+
+    NAME=$(echo "$*" | grep -o '[^ ]*@[^ ]*' | cut -d@ -f1)   # Getting user name.
+    SERVER=$(echo "$*" | grep -o '[^ ]*@[^ ]*' | cut -d@ -f2) # Getting server name.
+
+    mkfifo $SSHOME/$NAME                                 # Creating a FIFO tempfile.
+    trap "rm $SSHOME/$NAME ; exit" SIGTERM SIGHUP SIGINT # Clearing the FIFO on kill.
+
+    # Reading FIFO file in another thread.
+    (cat -u -e $SSHOME/$NAME | while read line; do
+        if echo "$line" | grep -q ''; then
+            # python $SSHOME/notify.py $NAME $2 "$line"
+            notify-send "New action"
         fi
-    done &
-    ssh -t $1@chat.shazow.net | tee $SSHOME/$1
-    rm $SSHOME/$1 # kill the FIFO when done (should kill other threads)
-    killall cat # sorry!
-    echo "Cleaned up SSH fifo"
+    done & ) > /dev/null 2>&1 # Removing backgroung process info from output.
+
+    ssh -t $* | tee $SSHOME/$NAME # Connecting to server and translating to FIFO.
+
+    rm $SSHOME/$NAME # Kill the FIFO when done (should kill other threads).
+
+    # killall cat # Stop reading file.
 }
 
