@@ -2,6 +2,7 @@
 
 function start_chat() {
 
+    OSX=0          # If you are on OS X set it to smth.
     TEMPDIR="/tmp" # Directory to store FIFO tempfile.
 
     NAME=$(echo "$*" | grep -o '[^ ]*@[^ ]*' | cut -d@ -f1)   # Getting user name.
@@ -19,11 +20,20 @@ function start_chat() {
     (cat -u -e $TEMPDIR/$NAME | while read line; do
 
         # Notifying if meeting out name in others msgs.
-        if echo "$line" | grep -q '\^G'; then
-            # python $TEMPDIR/notify.py "$NAME" "$NAME" "$line"
+        if echo "$line" | grep -q '\^G\^M\^M'; then
 
-            notify-send "You were mentioned..."
+            SENDER_NAME=$(get_name "$line")
+            SENDER_TEXT=$(get_text "$line")
+
+            # Check if we are on OS X.
+            if ! [ $OSX -eq 0 ]; then
+                osascript -e 'display notification "'"${SENDER_TEXT//\"/\\\"}"'" with title "Mentioned by "'"${SENDER_NAME//\"/\\\"}"'"'
+            else
+                notify-send "Mentioned by $SENDER_NAME" "$SENDER_TEXT"
+            fi
+
             echo $line >> $TEMPDIR/log
+
         fi
     done & ) > /dev/null 2>&1 # Removing backgroung process info from output.
 
@@ -33,8 +43,14 @@ function start_chat() {
     # killall cat # Stop reading file.
 }
 
-function clear_message() {
+function get_name() {
+    SENDER_NAME=sample_name
     echo $SENDER_NAME
+}
+
+function get_text() {
+    SENDER_TEXT=$1
+    echo $SENDER_TEXT
 }
 
 start_chat $*
